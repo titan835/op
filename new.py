@@ -16,8 +16,8 @@ keys = {}  # {key: expiry_time}
 ADMIN_ID = 7163028849  # Replace with your admin's Telegram ID
 
 # Define default values
-DEFAULT_PACKET_SIZE = 8
-DEFAULT_THREADS = 900
+DEFAULT_PACKET_SIZE = 10
+DEFAULT_THREADS = 500
 MAX_ATTACK_TIME = 180  # in seconds
 
 # Function to generate random keys
