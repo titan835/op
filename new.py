@@ -226,7 +226,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Main function to start the bot
 def main():
     # Create the Application
-    application = Application.builder().token("7413722350:AAEBSrOE31ij_OELB0eFgFTM1EO5r5v0dHs").build()
+    application = Application.builder().token("8022705558:AAFAJD_--b6f96kuatpQOqPMefnec7hIQPY").build()
 
     # Add command handlers
     application.add_handler(CommandHandler("start", start))
