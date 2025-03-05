@@ -19,9 +19,9 @@ attack_logs = []  # List to store attack logs
 ADMIN_ID = 7163028849  # Replace with your admin's Telegram ID
 
 # Define default values
-DEFAULT_PACKET_SIZE = 1024
-DEFAULT_THREADS = 10
-MAX_ATTACK_TIME = 60  # in seconds
+DEFAULT_PACKET_SIZE = 12
+DEFAULT_THREADS = 500
+MAX_ATTACK_TIME = 240  # in seconds
 
 # Kolkata timezone
 KOLKATA_TZ = pytz.timezone('Asia/Kolkata')
