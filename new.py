@@ -270,15 +270,6 @@ def main():
     application.add_handler(CommandHandler("genkey", genkey))
     application.add_handler(CommandHandler("mgenkey", mgenkey))
     application.add_handler(CommandHandler("users", users))
-    application.add_handler(Command
-
-    # Add command handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help))
-    application.add_handler(CommandHandler("bgmi", bgmi))
-    application.add_handler(CommandHandler("genkey", genkey))
-    application.add_handler(CommandHandler("mgenkey", mgenkey))
-    application.add_handler(CommandHandler("users", users))
     application.add_handler(CommandHandler("redeem", redeem))
     application.add_handler(CommandHandler("logs", logs))
     application.add_handler(CommandHandler("broadcast", broadcast))
