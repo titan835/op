@@ -41,6 +41,7 @@ def parse_duration(duration_str):
     return None
 
 # Function to run the attack
+# Function to run the attack
 def attack(ip, port, context, chat_id, user_id):
     global attack_running
 
@@ -153,9 +154,7 @@ async def bgmi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attack_thread = threading.Thread(target=attack, args=(ip, port, context, update.message.chat_id, user_id))
     attack_thread.start()
 
-    # Wait for the attack to finish and reset the flag
-    attack_thread.join()  # This ensures the main thread waits for the attack to finish
-    attack_running = False  # Reset the flag after the attack is done
+    # Do NOT use attack_thread.join() here, as it will block the main thread
 
 # Command: Generate a key (Admin only)
 async def genkey(update: Update, context: ContextTypes.DEFAULT_TYPE):
